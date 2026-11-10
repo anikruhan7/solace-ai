@@ -33,7 +33,13 @@ async function callModel(messages: ChatMessage[], maxTokens = 400, temperature =
   const res = await fetch(`${env.aiBaseUrl}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${env.aiApiKey}` },
-    body: JSON.stringify({ model: env.aiModel, messages, temperature, max_tokens: maxTokens }),
+    body: JSON.stringify({
+      model: env.aiModel,
+      messages,
+      temperature,
+      max_tokens: Math.max(maxTokens, 1200),
+      ...(env.aiModel.includes("gpt-oss") ? { reasoning_effort: "low" } : {}),
+    }),
   });
   if (!res.ok) {
     const text = await res.text();
