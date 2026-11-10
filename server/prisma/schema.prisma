@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile       UserProfile?
+  preferences   UserPreferences?
+  moodEntries   MoodEntry[]
+  conversations Conversation[]
+  favorites     FavoriteAffirmation[]
+  completions   ActivityCompletion[]
+  assessments   WellnessAssessment[]
+  reminders     Reminder[]
+  deviceTokens  DeviceToken[]
+}
+
+model UserProfile {
+  id         String  @id @default(cuid())
+  userId     String  @unique
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timezone   String  @default("UTC")
+  focusAreas String[] @default([])
+  aboutMe    String?
+  updatedAt  DateTime @updatedAt
+}
+
+model UserPreferences {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiPersonalization   Boolean  @default(true)
+  aiUseMoodContext    Boolean  @default(true)
+  dailyMoodReminder   Boolean  @default(false)
+  dailyMoodTime       String   @default("09:00")
+  affirmationReminder Boolean  @default(false)
+  affirmationTime     String   @default("08:00")
+  breathingReminder   Boolean  @default(false)
+  breathingTime       String   @default("20:00")
+  selfCareReminder    Boolean  @default(false)
+  selfCareTime        String   @default("18:00")
+  updatedAt           DateTime @updatedAt
+}
+
+model MoodEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mood      String
+  intensity Int      @default(3)
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String    @default("New conversation")
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model Affirmation {
+  id        String                @id @default(cuid())
+  text      String
+  category  String                @default("general")
+  favorites FavoriteAffirmation[]
+}
+
+model FavoriteAffirmation {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  affirmationId String
+  affirmation   Affirmation @relation(fields: [affirmationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([userId, affirmationId])
+}
+
+model WellnessActivity {
+  id          String               @id @default(cuid())
+  slug        String               @unique
+  title       String
+  description String
+  duration    Int
+  category    String
+  completions ActivityCompletion[]
+}
+
+model ActivityCompletion {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityId String?
+  activity   WellnessActivity? @relation(fields: [activityId], references: [id])
+  type       String
+  duration   Int              @default(0)
+  createdAt  DateTime         @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model WellnessAssessment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score     Int
+  answers   Json
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Reminder {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String
+  type      String
+  time      String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String
+  createdAt DateTime @default(now())
+}
