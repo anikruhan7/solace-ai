@@ -3,3 +3,4 @@ dist
 .env
 .expo
 *.old.yaml
+.DS_Store
